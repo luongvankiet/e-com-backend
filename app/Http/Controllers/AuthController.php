@@ -15,22 +15,19 @@ class AuthController extends Controller
 {
     public function login(LoginRequest $request)
     {
-        if (!Auth::attempt([
-            'email' => $request->input('email'),
-            'password' => $request->input('password'),
-        ])) {
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
-                'message' => 'Email or password is incorrect',
+                'message' => 'The provided credentials are incorrect.'
             ], Response::HTTP_UNAUTHORIZED);
         }
 
-        $user = Auth::user();
-
-        $token = $request->user()->createToken($request->input('email'));
+        $token = $user->createToken($request->input('email'));
 
         return response()->json([
             'data' => [
-                'user' => UserResource::make($user),
+                'user' => UserResource::make($user->load('roles.permissions')),
                 'access_token' => $token->plainTextToken,
             ]
         ]);
@@ -46,13 +43,11 @@ class AuthController extends Controller
             'password' => Hash::make($request->input('password')),
         ]);
 
-        Auth::login($user);
-
-        $token = $request->user()->createToken($request->input('email'));
+        $token = $user->createToken($request->input('email'));
 
         return response()->json([
             'data' => [
-                'user' => UserResource::make($user),
+                'user' => UserResource::make($user->load('roles.permissions')),
                 'access_token' => $token->plainTextToken,
             ]
         ]);
@@ -61,7 +56,10 @@ class AuthController extends Controller
     public function getAuthenticatedUser()
     {
         if (Auth::check()) {
-            return UserResource::make(Auth::user());
+            /** @var \App\Models\User $user */
+            $user = Auth::user();
+
+            return UserResource::make($user->load('roles.permissions'));
         }
 
         return response()->json([

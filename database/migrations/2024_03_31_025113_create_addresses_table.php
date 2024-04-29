@@ -18,8 +18,8 @@ return new class extends Migration
                 ->nullable()
                 ->constrained()
                 ->cascadeOnDelete();
-            $table->string('address_line1');
-            $table->string('address_line2')->nullable();
+            $table->string('address_line_1');
+            $table->string('address_line_2')->nullable();
             $table->string('city');
             $table->string('state');
             $table->string('country');
